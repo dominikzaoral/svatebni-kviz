@@ -454,6 +454,7 @@ function showHint() {
 }
 
 function showSuccess(text, opts = {}) {
+  $("error").textContent = "";
   $("success-text").innerHTML = text;
   $("success-box").classList.remove("hidden");
   $("answer").disabled = true;
@@ -466,6 +467,7 @@ function showSuccess(text, opts = {}) {
 
 // Samostatná finální obrazovka kvízu.
 function showFinale(celebrate = true) {
+  $("error").textContent = "";
   $("game").classList.add("hidden");
   $("intro").classList.add("hidden");
   $("finale").classList.remove("hidden");
@@ -573,7 +575,7 @@ function consoleGreeting() {
     console.log("%cVidíme tě 👀 Když už jsi tady…", "font-size:13px;");
     if (state.data && state.data.hackerHint) {
       console.log(
-        "%c🔐 Výzva pro zvědavé: dekóduj  %c" + state.data.hackerHint + "%c\n   Nápověda: Caesar by to posunul o 13 a pak zabalil do base64.\n   Až to rozlouskneš, zavolej: svatba('výsledek')",
+        "%c🔐 Výzva pro zvědavé: dekóduj  %c" + state.data.hackerHint + "%c\n   Nápověda: Caesar by to posunul o 13 a pak zabalil do base64.\n   Až to rozlouskneš, zavolej: svatba('výsledek')\n   (Tuhle výzvu kdykoli zopakuješ příkazem napoveda() )",
         "color:#6f8a5b;font-size:13px;",
         "color:#6f8a5b;font-size:13px;font-weight:bold;font-family:monospace;",
         "color:#6f8a5b;font-size:12px;"
@@ -584,6 +586,12 @@ function consoleGreeting() {
       "color:#999;font-size:11px;"
     );
   } catch (e) { /* konzole není kritická */ }
+}
+
+// Kdo otevře konzoli až po načtení, zopakuje si výzvu příkazem napoveda()
+function napoveda() {
+  consoleGreeting();
+  return "🔎 Výzva vypsána výše.";
 }
 
 function buildShareText() {
