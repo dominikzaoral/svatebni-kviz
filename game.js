@@ -410,16 +410,35 @@ function collectAnswer() {
 }
 
 // Vykreslí tlačítko nápovědy a box s už odhalenými nápovědami podle stavu.
+// Bezpečně převede text nápovědy na HTML: nejdřív escapuje vše, pak URL
+// (s i bez http) obalí do klikacího odkazu. Brání vložení cizího HTML.
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function linkify(text) {
+  const safe = escapeHtml(text);
+  // zachytí http(s)://… i holé domény typu rotavicentina.com/en/...
+  const urlRe = /((?:https?:\/\/)?[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?)/gi;
+  return safe.replace(urlRe, (m) => {
+    const href = m.match(/^https?:\/\//i) ? m : "https://" + m;
+    return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + m + "</a>";
+  });
+}
+
 function renderHints() {
   const hints = (state.current && state.current.hints) || [];
   const btn = $("hint-btn");
   const box = $("hint-box");
 
-  // box: ukaž odhalené nápovědy
+  // box: ukaž odhalené nápovědy (text se escapuje, URL se obalí do odkazu)
   if (state.hintsShown > 0) {
     box.innerHTML = hints
       .slice(0, state.hintsShown)
-      .map((h) => '<div class="hint-item">' + h + "</div>")
+      .map((h) => '<div class="hint-item">' + linkify(h) + "</div>")
       .join("");
     box.classList.remove("hidden");
   } else {

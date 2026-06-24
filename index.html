@@ -443,6 +443,12 @@
     }
     .hint-item + .hint-item { border-top: 1px solid rgba(184,146,78,.18); }
     .hint-item::before { content: "💡 "; }
+    .hint-item a {
+      color: var(--accent-deep);
+      text-decoration: underline;
+      word-break: break-all;
+    }
+    .hint-item a:hover { color: var(--accent); }
 
     .hidden { display: none !important; }
 
