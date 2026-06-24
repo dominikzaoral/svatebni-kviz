@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<!--
+  ═══════════════════════════════════════════════════════
+        ✦ ✧ ✦   J i t k a  ♥  R a d o m í r   ✦ ✧ ✦
+              18. července 2026 · Nový Dvůr, Lhotka
+  ═══════════════════════════════════════════════════════
+
+  Ahoj, zvědavče. Ano, koukáš správně — celá hra běží u tebe
+  v prohlížeči. Šifrování: AES-256-GCM, klíče: PBKDF2-SHA256
+  (250 000 iterací). Odpovědi tady nenajdeš — nejsou tu.
+
+  Ale konzole (F12) ti možná něco poví… 😉
+  ═══════════════════════════════════════════════════════
+-->
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Svatební kvíz</title>
+  <script>
+    // Aplikuj uložené téma okamžitě, ať neproblikne světlá obrazovka
+    try { if (localStorage.getItem("svatba_theme") === "dark") document.documentElement.setAttribute("data-theme", "dark"); } catch (e) {}
+  </script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💍</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f0e8;
+      --bg-soft: #fbf8f2;
+      --card: #ffffff;
+      --ink: #2c2620;
+      --ink-soft: #4a4138;
+      --ink-dim: #8a7d6c;
+      --accent: #b8924e;
+      --accent-soft: #cdab6e;
+      --accent-deep: #9a7838;
+      --green: #6f8a5b;
+      --red: #b56a52;
+      --border: #e3d9c8;
+      --line: #d8cab2;
+      --glow: #fdfbf6;
+      --on-accent: #ffffff;
+      --field-bg: #fdfbf6;
+      --radius: 4px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #1a1611;
+      --bg-soft: #221d16;
+      --card: #262019;
+      --ink: #f3ece2;
+      --ink-soft: #d8ccba;
+      --ink-dim: #9c8e79;
+      --accent: #cdab6e;
+      --accent-soft: #e3c889;
+      --accent-deep: #e3c889;
+      --green: #9cc189;
+      --red: #d8957e;
+      --border: #3d342a;
+      --line: #4a3f31;
+      --glow: #2e2417;
+      --on-accent: #1a1611;
+      --field-bg: #1d1812;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    .card, .intro-card, .rules-card, .modal-box, #answer, button {
+      transition: background-color .3s ease, color .3s ease, border-color .3s ease;
+    }
+
+    html, body {
+      margin: 0; padding: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(900px 500px at 50% -5%, var(--glow) 0%, transparent 65%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "EB Garamond", Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color .3s ease, color .3s ease;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 18px;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    #intro, #game {
+      width: 100%;
+      max-width: 460px;
+      animation: rise .6s cubic-bezier(.2,.8,.2,1);
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .intro-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 30px 26px;
+      box-shadow: 0 10px 40px rgba(120,100,60,.12);
+      position: relative;
+      text-align: center;
+    }
+    .intro-card::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .intro-lead {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 19px;
+      line-height: 1.55;
+      color: var(--ink-soft);
+      margin: 4px 0 22px;
+      position: relative;
+    }
+
+    .btn-rules {
+      width: 100%;
+      margin-top: 10px;
+      padding: 11px;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 14px;
+      letter-spacing: 1.5px;
+      color: var(--ink-dim);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      position: relative;
+    }
+    .btn-rules:hover { color: var(--accent-deep); border-color: var(--accent); }
+
+    .rules-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      box-shadow: 0 10px 40px rgba(120,100,60,.12);
+      position: relative;
+      text-align: left;
+    }
+    .rules-card::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .rules-section { position: relative; }
+    .rules-head {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--accent-deep);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .rules-quick {
+      margin: 0;
+      padding-left: 20px;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 17px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+    .rules-quick li { margin-bottom: 6px; }
+    .rules-divider {
+      height: 1px;
+      background: rgba(184,146,78,.3);
+      margin: 22px 0;
+      position: relative;
+    }
+    .rules-detail {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+    .rules-detail p { margin: 0 0 12px; }
+    .rules-detail b { color: var(--ink); }
+    #rules-back { margin-top: 22px; position: relative; }
+
+    .game-top {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    #progress-bar {
+      width: 100%;
+      max-width: 260px;
+      height: 5px;
+      margin: 0 auto 16px;
+      background: rgba(184,146,78,.18);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+      border-radius: 3px;
+      transition: width .5s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .card-fade {
+      animation: cardFade .35s ease;
+    }
+    @keyframes cardFade {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .crest {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .crest .eyebrow {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    .crest .sprig {
+      font-size: 22px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .crest h1 {
+      font-family: "Great Vibes", cursive;
+      font-weight: 400;
+      font-size: 40px;
+      line-height: 1.1;
+      letter-spacing: .5px;
+      margin: 0;
+      color: var(--ink);
+    }
+    .crest .amp {
+      font-family: "Great Vibes", cursive;
+      font-size: 24px;
+      color: var(--accent);
+      margin: 2px 0;
+    }
+    .crest .meta {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: var(--ink-dim);
+      margin-top: 12px;
+    }
+
+    #level-label {
+      text-align: center;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 13px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+      margin-bottom: 14px;
+    }
+
+    .btn-restart {
+      margin-top: 0;
+      padding: 7px 18px;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      color: var(--ink-dim);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+    }
+    .btn-restart:hover { color: var(--accent-deep); border-color: var(--accent); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 30px 26px;
+      box-shadow: 0 10px 40px rgba(120,100,60,.12);
+      position: relative;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    #level-image {
+      width: 100%;
+      border-radius: 3px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    #prompt {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 23px;
+      font-weight: 500;
+      line-height: 1.55;
+      color: var(--ink);
+      margin-bottom: 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .field { position: relative; }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .opt {
+      width: 100%;
+      padding: 13px 16px;
+      font-family: "EB Garamond", serif;
+      font-size: 16px;
+      color: var(--ink);
+      background: var(--field-bg);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+    .opt:hover { border-color: var(--accent); }
+    .opt.selected {
+      background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+      color: var(--on-accent);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .opt.selected::before { content: "✓ "; }
+    .options.ordering .opt.selected::before { content: ""; }
+    .options.ordering .opt { font-variant-numeric: tabular-nums; }
+
+    #answer {
+      width: 100%;
+      padding: 15px 16px;
+      font-size: 16px;
+      font-family: "EB Garamond", serif;
+      color: var(--ink);
+      background: var(--field-bg);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      outline: none;
+      text-align: center;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    #answer:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(184,146,78,.15);
+    }
+    #answer::placeholder { color: #b3a591; font-style: italic; }
+
+    button {
+      font-family: "Cormorant Garamond", serif;
+      cursor: pointer;
+      border: none;
+      transition: transform .12s, filter .2s, opacity .2s;
+    }
+    button:active { transform: scale(.97); }
+    button:disabled { opacity: .5; cursor: default; }
+
+    .btn-primary {
+      width: 100%;
+      margin-top: 14px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--on-accent);
+      background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+      border-radius: 3px;
+      box-shadow: 0 6px 18px rgba(184,146,78,.28);
+    }
+    .btn-primary:hover { filter: brightness(1.05); }
+
+    #error {
+      min-height: 20px;
+      margin-top: 12px;
+      text-align: center;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 15px;
+      color: var(--red);
+    }
+
+    .btn-hint {
+      width: 100%;
+      margin-top: 6px;
+      padding: 11px;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: var(--ink-dim);
+      background: transparent;
+      border: 1px dashed var(--line);
+      border-radius: 3px;
+    }
+    .btn-hint:hover { color: var(--accent-deep); border-color: var(--accent); }
+
+    #hint-box {
+      margin-top: 10px;
+      padding: 14px 16px;
+      background: rgba(184,146,78,.07);
+      border: 1px solid rgba(184,146,78,.25);
+      border-radius: 4px;
+      text-align: left;
+    }
+    .hint-item {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 16px;
+      line-height: 1.4;
+      color: var(--ink-soft);
+      padding: 5px 0;
+    }
+    .hint-item + .hint-item { border-top: 1px solid rgba(184,146,78,.18); }
+    .hint-item::before { content: "💡 "; }
+
+    .hidden { display: none !important; }
+
+    #success-box {
+      margin-top: 22px;
+      padding: 22px;
+      background: rgba(111,138,91,.07);
+      border: 1px solid rgba(111,138,91,.25);
+      border-radius: 4px;
+      text-align: center;
+      animation: rise .4s ease;
+    }
+    #success-text {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 21px;
+      font-weight: 500;
+      line-height: 1.45;
+      color: var(--green);
+      margin-bottom: 18px;
+    }
+
+    .scorebox {
+      margin-top: 16px;
+      padding: 16px;
+      background: rgba(184,146,78,.08);
+      border: 1px solid rgba(184,146,78,.3);
+      border-radius: 4px;
+    }
+    .score-points {
+      font-family: "Great Vibes", cursive;
+      font-size: 34px;
+      line-height: 1.1;
+      color: var(--accent-deep);
+    }
+    .score-detail {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 15px;
+      letter-spacing: 1px;
+      color: var(--ink-soft);
+      margin-top: 6px;
+    }
+
+    .score-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 17px;
+      color: var(--ink);
+      margin-top: 8px;
+    }
+    .score-sub {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 13px;
+      letter-spacing: .5px;
+      color: var(--ink-dim);
+      text-align: left;
+    }
+    .score-divider {
+      height: 1px;
+      background: rgba(184,146,78,.35);
+      margin: 12px 0 4px;
+    }
+    .score-total {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent-deep);
+    }
+    .score-rank {
+      font-family: "Great Vibes", cursive;
+      font-size: 30px;
+      line-height: 1.1;
+      color: var(--accent-deep);
+      margin-top: 14px;
+    }
+
+    .btn-go {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--accent-deep);
+      background: #fff;
+      border: 1px solid var(--accent);
+      border-radius: 3px;
+    }
+    .btn-go:hover { background: #fdf8ee; }
+
+    #finale-choices { display: flex; flex-direction: column; gap: 10px; }
+    .btn-quit {
+      width: 100%; padding: 13px; font-size: 15px; letter-spacing: 1px;
+      color: var(--ink-dim); background: transparent;
+      border: 1px solid var(--line); border-radius: 3px;
+    }
+    .btn-hard {
+      width: 100%; padding: 14px; font-size: 15px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--on-accent);
+      background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+      border-radius: 3px;
+    }
+
+    .end {
+      text-align: center;
+      font-family: "Great Vibes", cursive;
+      font-size: 32px;
+      line-height: 1.4;
+      color: var(--accent-deep);
+      padding: 40px 0;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 26px;
+      font-family: "Great Vibes", cursive;
+      font-size: 20px;
+      letter-spacing: .5px;
+      color: var(--accent-deep);
+    }
+    .footer .place {
+      display: block;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-top: 6px;
+    }
+
+    #finale-text {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 22px;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--green);
+      text-align: center;
+      margin-bottom: 4px;
+      position: relative;
+    }
+    .finale-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 18px;
+      position: relative;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 16, 12, .55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 50;
+      animation: fade .2s ease;
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-box {
+      width: 100%;
+      max-width: 360px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px 22px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      text-align: center;
+    }
+    .modal-title {
+      font-family: "Great Vibes", cursive;
+      font-size: 30px;
+      color: var(--accent-deep);
+      margin-bottom: 8px;
+    }
+    .modal-text {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 17px;
+      color: var(--ink-soft);
+      margin-bottom: 20px;
+    }
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- ÚVODNÍ OBRAZOVKA -->
+  <div id="intro">
+    <div class="crest">
+      <div class="eyebrow">Oslava lásky, která rostla<br>s každým dnem naší cesty</div>
+      <div class="sprig">❧</div>
+      <h1>Jitka &amp; Radomír</h1>
+      <div class="meta">18. července 2026 · Nový Dvůr, Lhotka</div>
+    </div>
+
+    <div class="intro-card">
+      <p class="intro-lead">Připravili jsme pro vás malý kvíz o nás dvou.<br>14 otázek — jak dobře nás znáš?</p>
+      <button id="start-btn" class="btn-primary">Spustit kvíz</button>
+      <button id="rules-btn" class="btn-rules">📜 Pravidla</button>
+      <button id="theme-btn" class="btn-rules">🌙 Tmavý režim</button>
+    </div>
+
+    <div class="footer">Tam, kde začíná my<span class="place">Jitka &amp; Radomír · 18. 7. 2026</span></div>
+  </div>
+
+  <!-- HERNÍ OBRAZOVKA -->
+  <div id="game" class="hidden">
+    <div class="game-top">
+      <button id="restart-btn" class="btn-restart">↺ Začít znovu</button>
+    </div>
+
+    <div id="level-label"></div>
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+
+    <div class="card">
+      <img id="level-image" class="hidden" alt="šifra" />
+      <div id="prompt">Načítám…</div>
+
+      <div class="field">
+        <input id="answer" type="text" autocomplete="off" autocapitalize="off"
+               spellcheck="false" placeholder="Tvoje odpověď…" />
+      </div>
+      <div id="options" class="options hidden"></div>
+      <button id="submit-btn" class="btn-primary">Ověřit odpověď</button>
+      <div id="error"></div>
+
+      <button id="hint-btn" class="btn-hint hidden">💡 Nápověda (−150 b.)</button>
+      <div id="hint-box" class="hidden"></div>
+
+      <div id="success-box" class="hidden">
+        <div id="success-text"></div>
+        <button id="continue-btn" class="btn-go hidden">Další otázka →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINÁLNÍ OBRAZOVKA (gratulace + skóre, bez šifry) -->
+  <div id="finale" class="hidden">
+    <div class="crest">
+      <div class="sprig">❧</div>
+      <h1>Jitka &amp; Radomír</h1>
+      <div class="meta">18. července 2026 · Nový Dvůr, Lhotka</div>
+    </div>
+
+    <div class="intro-card">
+      <div id="finale-text"></div>
+      <div id="finale-score"></div>
+      <div id="finale-actions" class="finale-actions"></div>
+    </div>
+
+    <div class="footer">Tam, kde začíná my<span class="place">Jitka &amp; Radomír · 18. 7. 2026</span></div>
+  </div>
+
+  <!-- OBRAZOVKA PRAVIDEL -->
+  <div id="rules" class="hidden">
+    <div class="crest">
+      <div class="sprig">❧</div>
+      <h1>Pravidla kvízu</h1>
+    </div>
+
+    <div class="rules-card">
+      <div class="rules-section">
+        <div class="rules-head">⚡ Ve zkratce</div>
+        <ul class="rules-quick">
+          <li>14 otázek o nás dvou — odpovídej a postupuj dál.</li>
+          <li>Otázky jsou různé: výběr, čísla, výběr více možností i fotky.</li>
+          <li>Za rychlost a málo chyb získáš víc bodů.</li>
+          <li>Nevíš? Vezmi si nápovědu (stojí pár bodů).</li>
+          <li>Skóre je jen pro zábavu — nikam se neukládá.</li>
+        </ul>
+      </div>
+
+      <div class="rules-divider"></div>
+
+      <div class="rules-section">
+        <div class="rules-head">📖 Podrobně</div>
+        <div class="rules-detail">
+          <p><b>Průběh.</b> Pod každou otázkou je pole nebo tlačítka na odpověď. Po správné odpovědi se objeví krátký text a tlačítko na další otázku. Na velikosti písmen ani diakritice nezáleží.</p>
+          <p><b>Bodování.</b> Kvíz startuje na 10 000 bodech. Odečítá se za čas (každá vteřina), za špatné odpovědi a za zobrazené nápovědy. Protože jde o kvíz, čas se počítá přísněji — neváhej dlouho. Na konci uvidíš skóre a slovní hodnocení.</p>
+          <p><b>Nápovědy.</b> U některých otázek je tlačítko nápovědy. První zobrazení odečte body, opětovné nahlédnutí už je zdarma.</p>
+          <p><b>Postup a soukromí.</b> Kvíz si pamatuje, kde jsi skončil, i když zavřeš prohlížeč. Skóre ani postup se nikam neodesílají — všechno zůstává jen v tvém telefonu. Tlačítkem „Začít znovu" se můžeš kdykoli vrátit na začátek.</p>
+        </div>
+      </div>
+
+      <button id="rules-back" class="btn-primary">← Zpět na úvod</button>
+    </div>
+
+    <div class="footer">Tam, kde začíná my<span class="place">Jitka &amp; Radomír · 18. 7. 2026</span></div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
