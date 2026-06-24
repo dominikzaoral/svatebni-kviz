@@ -324,7 +324,15 @@ function renderLevel(content) {
     card.classList.add("card-fade");
   }
 
-  $("answer").focus();
+  // Autofocus do pole jen na nedotykových zařízeních (desktop).
+  // Na mobilu/tabletu by focus hned vyvolal klávesnici a posunul obsah —
+  // necháme uživatele klepnout do pole sám.
+  const isTouch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  const type = (state.current && state.current.type) || "text";
+  const usesField = !(type === "abcd" || type === "combo" || type === "ano_ne" || type === "poradi");
+  if (!isTouch && usesField) {
+    $("answer").focus();
+  }
 }
 
 // Vykreslí vstup podle typu otázky.
