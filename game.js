@@ -621,6 +621,10 @@ function napoveda() {
   return "🔎 Výzva vypsána výše.";
 }
 
+// ---- SDÍLENÍ VÝSLEDKU ----
+// Až budeš znát adresu kvízu, uprav ji zde (teď ukazuje na šifrovačku).
+const GAME_URL = "https://dominikzaoral.github.io/svatba/";
+
 function buildShareText() {
   const r = partResult(state.part);
   const rankTitle = rankFor(r.score).title;
@@ -631,18 +635,57 @@ function makeShareButton() {
   const btn = document.createElement("button");
   btn.className = "btn-go";
   btn.textContent = "📤 Pochlubit se skóre";
+
+  const flash = (msg) => {
+    const orig = "📤 Pochlubit se skóre";
+    btn.textContent = msg;
+    setTimeout(() => { btn.textContent = orig; }, 2200);
+  };
+
+  // Zkopíruje text do schránky; vrací true při úspěchu.
+  async function copyText(text) {
+    // moderní API (jen v zabezpečeném kontextu – https nebo localhost)
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) { /* zkus fallback níže */ }
+    // starší fallback přes skrytý textarea + execCommand
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;top:-1000px;left:-1000px;opacity:0;";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
   btn.addEventListener("click", async () => {
     const text = buildShareText();
-    try {
-      if (navigator.share) {
+    // 1) nativní sdílení (hlavně mobil)
+    if (navigator.share) {
+      try {
         await navigator.share({ title: "Svatební kvíz", text, url: GAME_URL });
-      } else {
-        await navigator.clipboard.writeText(text);
-        btn.textContent = "✓ Zkopírováno do schránky";
-        setTimeout(() => { btn.textContent = "📤 Pochlubit se skóre"; }, 2000);
+        return; // sdíleno
+      } catch (e) {
+        if (e && e.name === "AbortError") return; // uživatel zrušil – nic nedělej
+        // jinak spadni do kopírování
       }
-    } catch (e) {
-      // uživatel sdílení zrušil — nic neděláme
+    }
+    // 2) kopírování do schránky
+    const copied = await copyText(text);
+    if (copied) {
+      flash("✓ Zkopírováno do schránky");
+    } else {
+      // 3) poslední záchrana – ukázat text k ručnímu zkopírování
+      window.prompt("Zkopíruj si text (Ctrl/Cmd+C):", text);
     }
   });
   return btn;
@@ -783,11 +826,19 @@ async function init() {
   // úklid uloženého postupu ze starší verze hry
   try { localStorage.removeItem("svatba_sifrovacka_v1"); } catch (e) {}
 
+  // Zpřístupni konzolové funkce hned (i kdyby načtení dat selhalo)
+  window.napoveda = napoveda;
+  window.svatba = svatba;
+
   try {
     const res = await fetch("levels.json", { cache: "no-store" });
     state.data = await res.json();
   } catch (e) {
-    $("prompt").textContent = "Nepodařilo se načíst hru (levels.json).";
+    const offline = location.protocol === "file:";
+    $("prompt").innerHTML = offline
+      ? "Hru nelze spustit otevřením souboru napřímo.<br>Otevři ji přes webovou adresu (http/https), např. přes GitHub Pages."
+      : "Nepodařilo se načíst hru (levels.json).";
+    consoleGreeting();
     return;
   }
 
